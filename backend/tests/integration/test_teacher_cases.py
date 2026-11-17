@@ -95,3 +95,43 @@ async def test_parse_returns_candidate_fields(
     data = response.json()["data"]
     assert data["title"]
     assert "background" in data
+
+
+async def test_rejected_case_can_be_edited_and_resubmitted(
+    client: httpx.AsyncClient,
+    seeded_db,
+    auth,
+) -> None:
+    """审核驳回后应允许作者修改并重新提交。"""
+    token = await _login(client, "teacher02")
+
+    patched = await client.patch(
+        "/api/v1/cases/case_015",
+        json={"title": "修改后的案例标题"},
+        headers=auth(token),
+    )
+    assert patched.json()["code"] == 0
+
+    submitted = await client.post(
+        "/api/v1/cases/case_015/submit",
+        headers=auth(token),
+    )
+    assert submitted.json()["data"]["status"] == "待审核"
+
+
+async def test_post_with_id_cannot_bypass_status_check(
+    client: httpx.AsyncClient,
+    seeded_db,
+    auth,
+) -> None:
+    """带 id 的 POST 更新不得绕过草稿/需补充/驳回的状态门。"""
+    token = await _login(client, "teacher02")
+
+    # case_013 处于待审核，整数 id 为 13。
+    response = await client.post(
+        "/api/v1/cases",
+        json={"id": 13, "title": "绕过审核修改"},
+        headers=auth(token),
+    )
+    assert response.json()["code"] == 400
+

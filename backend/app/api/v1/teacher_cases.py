@@ -15,7 +15,7 @@ from app.services.cases import find_case, next_case_no, normalize_page
 router = APIRouter(tags=["案例生产"])
 TeacherUser = Annotated[User, Depends(require_roles("teacher", "admin"))]
 
-EDITABLE_STATUSES = {"草稿", "需补充"}
+EDITABLE_STATUSES = {"草稿", "需补充", "审核驳回"}
 
 
 class CasePayload(BaseModel):
@@ -116,6 +116,9 @@ async def save_case(
         case = await session.get(Case, payload.id)
         if case is None or case.author_id != user.id:
             raise HTTPException(status_code=404, detail="案例不存在")
+        # 与 PATCH 保持同一状态门，避免带 id 的 POST 绕过审核直接改内容。
+        if case.review_status not in EDITABLE_STATUSES:
+            return fail(400, "当前状态不可编辑")
         _apply_payload(case, payload)
         case.update_time = now_text()
         await session.commit()

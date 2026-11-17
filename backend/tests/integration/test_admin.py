@@ -142,3 +142,24 @@ async def test_statistics_fields(
         "categoryDistribution",
         "sourceDistribution",
     }
+
+
+async def test_offline_case_can_be_republished(
+    client: httpx.AsyncClient,
+    seeded_db,
+    auth,
+) -> None:
+    """已下线案例应能由管理员重新发布，并重新出现在公开列表。"""
+    admin = await _login(client, "admin01")
+
+    # case_016 初始为已下线。
+    response = await client.patch(
+        "/api/v1/admin/cases/case_016",
+        json={"review_status": "已发布"},
+        headers=auth(admin),
+    )
+    assert response.json()["data"]["status"] == "已发布"
+
+    public = await client.get("/api/v1/cases", params={"keyword": "经典教学案例"})
+    assert public.json()["data"]["total"] >= 1
+

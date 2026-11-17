@@ -24,6 +24,13 @@ router = APIRouter(tags=["管理后台"])
 AdminUser = Annotated[User, Depends(require_roles("admin"))]
 
 VALID_REVIEW_STATUSES = {"已发布", "需补充", "审核驳回"}
+VALID_CASE_STATUSES = {"草稿", "待审核", "需补充", "审核驳回", "已发布", "已下线"}
+
+
+class AdminCasePayload(CasePayload):
+    """管理员维护案例时可额外调整状态。"""
+
+    review_status: str | None = None
 
 
 @router.get("/admin/reviews", summary="审核队列")
@@ -149,14 +156,19 @@ async def list_all_cases(
 @router.patch("/admin/cases/{case_ref}", summary="维护案例")
 async def update_case(
     case_ref: str,
-    payload: CasePayload,
+    payload: AdminCasePayload,
     admin: AdminUser,
     session: SessionDep,
 ) -> dict[str, object]:
-    """管理员可编辑任意状态的案例字段。"""
+    """管理员可编辑任意状态的案例字段，包括重新发布。"""
     case = await find_case(session, case_ref)
     if case is None:
         raise HTTPException(status_code=404, detail="案例不存在")
+
+    if payload.review_status is not None:
+        if payload.review_status not in VALID_CASE_STATUSES:
+            return fail(400, "案例状态不合法")
+        case.review_status = payload.review_status
 
     for field, column in FIELD_MAP.items():
         value = getattr(payload, field)
