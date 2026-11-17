@@ -11,6 +11,23 @@ MaxKB 作为独立部署的 AI 能力引擎，通过受控的适配层与业务�
 
 本项目为四人本科生创新项目，目前处于持续开发阶段。仓库统一管理前后端代码、基础设施配置、共享契约、数据规范和项目文档，并以可运行、可测试、可维护和便于团队协作为基本工程目标。
 
+## 快速演示
+
+前后端打通版的一键启动、演示账号与回退方式见
+[scripts/README.md](scripts/README.md)。简要步骤：
+
+```powershell
+# 终端 1：数据库 + 迁移 + 种子 + 后端
+powershell -ExecutionPolicy Bypass -File scripts/dev.ps1
+
+# 终端 2：前端
+cd frontend
+npm install --registry=https://registry.npmmirror.com
+npm run dev
+```
+
+浏览器访问 `http://localhost:5174`，账号 `student01` / `teacher01` / `admin01`，密码均为 `123456`。
+
 ## 一、项目目标
 
 项目计划优先打通以下最小业务闭环：
