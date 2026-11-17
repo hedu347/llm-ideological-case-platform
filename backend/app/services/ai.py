@@ -1,10 +1,11 @@
 """AI 生成与问答的流式编排。"""
 
+import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 
 from app.integrations.llm import builtin
-from app.integrations.llm.base import Draft
+from app.integrations.llm.base import Draft, LLMProvider
 
 ChunkSize = 3
 
@@ -39,6 +40,7 @@ def compose_text(case: dict[str, Any]) -> str:
 async def stream_generate(
     params: dict[str, Any],
     *,
+    provider: LLMProvider | None = None,
     references: list[dict[str, Any]] | None = None,
     on_done: Callable[[Draft, str, list[Draft]], Awaitable[int | None]] | None = None,
 ) -> AsyncIterator[tuple[str, dict[str, Any]]]:
@@ -55,8 +57,12 @@ async def stream_generate(
         yield ("error", {"code": 400, "message": "请选择思政方向并填写知识点"})
         return
 
+    active = provider or builtin
     try:
-        drafts = builtin.generate(ideological, knowledge, profession)
+        # 模型调用是同步阻塞的，放到线程里避免卡住事件循环。
+        drafts = await asyncio.to_thread(
+            active.generate, ideological, knowledge, profession
+        )
     except Exception:
         yield ("error", {"code": 6000, "message": "模型暂不可用"})
         return
@@ -114,6 +120,7 @@ async def stream_ask(
     case_context: dict[str, Any],
     question: str,
     *,
+    provider: LLMProvider | None = None,
     on_done: Callable[[str], Awaitable[int | None]] | None = None,
 ) -> AsyncIterator[tuple[str, dict[str, Any]]]:
     """产出问答流式事件。"""
@@ -121,8 +128,9 @@ async def stream_ask(
         yield ("error", {"code": 400, "message": "请输入问题"})
         return
 
+    active = provider or builtin
     try:
-        answer = builtin.ask(case_context, question)
+        answer = await asyncio.to_thread(active.ask, case_context, question)
     except Exception:
         yield ("error", {"code": 6001, "message": "回答生成失败"})
         return

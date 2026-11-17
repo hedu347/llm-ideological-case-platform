@@ -3,7 +3,7 @@
 import json
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from app.core.deps import CurrentUser, SessionDep, require_roles
 from app.core.response import fail, ok
 from app.core.timeutil import now_text, today_compact
+from app.integrations.llm.factory import get_provider
 from app.models import AiRecord, AskRecord, Case, User
 from app.services import ai as ai_service
 from app.services.cases import case_to_public, find_case, normalize_page
@@ -71,11 +72,13 @@ class GenerateRequest(BaseModel):
 
 @router.post("/ai/generate", summary="AI 案例生成（SSE）")
 async def generate_case(
+    request: Request,
     payload: GenerateRequest,
     user: TeacherUser,
     session: SessionDep,
 ) -> StreamingResponse:
     """多稿生成、逐稿评分并流式返回最优稿正文。"""
+    provider = get_provider(request.app.state.settings)
     references = await _reference_cases(session, payload.ideological)
 
     async def on_done(best, text: str, drafts) -> int | None:
@@ -106,6 +109,7 @@ async def generate_case(
     async def event_stream():
         async for event, data in ai_service.stream_generate(
             payload.model_dump(),
+            provider=provider,
             references=references,
             on_done=on_done,
         ):
@@ -123,12 +127,14 @@ class AskRequest(BaseModel):
 
 @router.post("/ai/ask/{case_ref}", summary="AI 智能问答（SSE）")
 async def ask_case(
+    request: Request,
     case_ref: str,
     payload: AskRequest,
     user: CurrentUser,
     session: SessionDep,
 ) -> Any:
     """基于案例上下文流式作答；``draft`` 表示使用请求体中的上下文。"""
+    provider = get_provider(request.app.state.settings)
     case_context = dict(payload.caseContext or {})
     case = None
 
@@ -161,6 +167,7 @@ async def ask_case(
         async for event, data in ai_service.stream_ask(
             case_context,
             payload.question,
+            provider=provider,
             on_done=on_done,
         ):
             yield _sse(event, data)
