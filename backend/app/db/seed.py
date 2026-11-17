@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.security import hash_password
+from app.db.seed_extra import EXTRA_CASES
 from app.db.session import DatabaseManager
 from app.models import (
     AiRecord,
@@ -444,7 +445,7 @@ async def _seed_cases(session: AsyncSession) -> None:
         user.username: user
         for user in (await session.execute(select(User))).scalars().all()
     }
-    for item in CASES:
+    for item in [*CASES, *EXTRA_CASES]:
         if item["case_no"] in existing:
             continue
         author_name = CASE_AUTHORS.get(item["case_no"])
