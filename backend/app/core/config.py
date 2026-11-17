@@ -20,6 +20,7 @@ ENV_FILE = PROJECT_ROOT / ".env"
 
 AppEnvironment = Literal["development", "testing", "production"]
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+LlmProvider = Literal["builtin", "openai", "maxkb"]
 CorsOrigins = Annotated[tuple[str, ...], NoDecode]
 
 _HTTP_URL_ADAPTER = TypeAdapter(AnyHttpUrl)
@@ -61,6 +62,14 @@ class Settings(BaseSettings):
     maxkb_qa_application_id: str | None = None
     maxkb_generation_application_id: str | None = None
     maxkb_evaluation_application_id: str | None = None
+
+    # AI 适配层配置。builtin 为默认的确定性生成器，不依赖外网与密钥，
+    # 保证演示环境在断网时仍能完整走通生成与问答流程。
+    llm_provider: LlmProvider = "builtin"
+    llm_base_url: AnyHttpUrl | None = None
+    llm_api_key: SecretStr | None = Field(default=None, repr=False)
+    llm_model: str | None = None
+    llm_timeout_seconds: float = Field(default=30, gt=0)
 
     @field_validator("app_name", "app_host")
     @classmethod
