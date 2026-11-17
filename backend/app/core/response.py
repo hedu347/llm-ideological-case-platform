@@ -11,3 +11,8 @@ from typing import Any
 def ok(data: Any = None, message: str = "success") -> dict[str, Any]:
     """构造成功或业务提示响应。"""
     return {"code": 0, "message": message, "data": data}
+
+
+def fail(code: int, message: str, data: Any = None) -> dict[str, Any]:
+    """构造 HTTP 200 下的业务失败响应。"""
+    return {"code": code, "message": message, "data": data}
