@@ -10,7 +10,7 @@ from app.core.deps import SessionDep, require_roles
 from app.core.response import fail, ok
 from app.core.timeutil import now_text, today_compact
 from app.models import Case, User
-from app.services.cases import find_case, normalize_page
+from app.services.cases import find_case, next_case_no, normalize_page
 
 router = APIRouter(tags=["案例生产"])
 TeacherUser = Annotated[User, Depends(require_roles("teacher", "admin"))]
@@ -101,13 +101,8 @@ def _apply_payload(case: Case, payload: CasePayload) -> None:
 
 
 async def _next_case_no(session: Any) -> str:
-    """按现有最大编号生成下一个 case_xxx。"""
-    values = (await session.execute(select(Case.case_no))).scalars().all()
-    maximum = 0
-    for value in values:
-        if value.startswith("case_") and value[5:].isdigit():
-            maximum = max(maximum, int(value[5:]))
-    return f"case_{maximum + 1:03d}"
+    """兼容旧调用，转交服务层实现。"""
+    return await next_case_no(session)
 
 
 @router.post("/cases", summary="新建或保存本人案例草稿")

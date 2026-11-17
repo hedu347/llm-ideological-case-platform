@@ -10,8 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import SessionDep, require_roles
 from app.core.response import fail, ok
 from app.core.security import hash_password
-from app.core.timeutil import now_text, today_compact
+from app.core.timeutil import today_compact
 from app.models import AuditLog, User
+from app.services.audit import add_audit
 
 router = APIRouter(tags=["账号与权限"])
 AdminUser = Annotated[User, Depends(require_roles("admin"))]
@@ -30,26 +31,6 @@ def user_record(user: User) -> dict[str, object]:
         "phone": user.phone,
         "createTime": user.create_time,
     }
-
-
-def add_audit(
-    session: AsyncSession,
-    operator: User,
-    action: str,
-    target: str,
-    detail: str,
-) -> None:
-    """登记管理员关键操作。"""
-    session.add(
-        AuditLog(
-            operator=operator.nick_name or operator.username,
-            username=operator.username,
-            action=action,
-            target=target,
-            detail=detail,
-            time=now_text(),
-        )
-    )
 
 
 def _normalize_page(page: int, size: int) -> tuple[int, int]:

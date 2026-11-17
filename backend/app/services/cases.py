@@ -67,6 +67,16 @@ async def find_case(session: AsyncSession, case_ref: str) -> Case | None:
     ).scalar_one_or_none()
 
 
+async def next_case_no(session: AsyncSession) -> str:
+    """按现有最大编号生成下一个 ``case_xxx``。"""
+    values = (await session.execute(select(Case.case_no))).scalars().all()
+    maximum = 0
+    for value in values:
+        if value.startswith("case_") and value[5:].isdigit():
+            maximum = max(maximum, int(value[5:]))
+    return f"case_{maximum + 1:03d}"
+
+
 async def list_cases(
     session: AsyncSession,
     *,
