@@ -80,6 +80,7 @@ class Case(Base):
         ForeignKey("users.id"), nullable=True
     )
     review_time: Mapped[str] = mapped_column(String(19), nullable=False, default="")
+    create_time: Mapped[str] = mapped_column(String(19), nullable=False, default="")
 
 
 class Favorite(Base):

@@ -1,5 +1,6 @@
 """Pytest 公共配置与隔离测试夹具。"""
 
+import os
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -9,6 +10,7 @@ import pytest_asyncio
 from fastapi import FastAPI
 
 from app.core.config import Settings
+from app.db.base import Base
 from app.factory import create_app
 
 
@@ -73,9 +75,34 @@ def test_settings(settings_values: dict[str, Any]) -> Settings:
     return Settings.model_validate(settings_values)
 
 
+def _test_database_url() -> str:
+    """返回集成测试使用的独立数据库地址。
+
+    优先读取 ``TEST_DATABASE_URL``；否则从应用配置继承主机、端口和凭据，
+    只把库名替换为 ``ideological_case_platform_test``，避免测试清空演示库。
+    """
+    explicit = os.environ.get("TEST_DATABASE_URL")
+    if explicit:
+        return explicit
+    settings = Settings()
+    base = str(settings.database_url)
+    return base.rsplit("/", 1)[0] + "/ideological_case_platform_test"
+
+
 @pytest_asyncio.fixture
-async def app(test_settings: Settings) -> AsyncIterator[FastAPI]:
-    """创建并完整进入、退出应用生命周期的测试应用。"""
+async def app(
+    request: pytest.FixtureRequest,
+    settings_values: dict[str, Any],
+) -> AsyncIterator[FastAPI]:
+    """创建并完整进入、退出应用生命周期的测试应用。
+
+    普通测试使用合成配置（不连接数据库）；带 ``--run-integration`` 时
+    切换到独立测试库，使接口测试可以执行真实 SQL。
+    """
+    values = dict(settings_values)
+    if request.config.getoption("--run-integration"):
+        values["database_url"] = _test_database_url()
+    test_settings = Settings.model_validate(values)
     test_app = create_app(test_settings)
     async with test_app.router.lifespan_context(test_app):
         yield test_app
@@ -93,3 +120,39 @@ async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
         base_url="http://testserver",
     ) as test_client:
         yield test_client
+
+
+@pytest_asyncio.fixture
+async def db_session(app: FastAPI) -> AsyncIterator[Any]:
+    """为集成测试提供已建表的独立数据库会话。
+
+    每次使用前重建全部业务表，保证测试之间互不污染；测试结束后由下一次
+    使用或测试库整体删除清理。
+    """
+    database = app.state.database
+    async with database.engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+        await connection.run_sync(Base.metadata.create_all)
+
+    async with database.session_factory() as session:
+        yield session
+
+
+@pytest_asyncio.fixture
+async def seeded_db(db_session: Any) -> AsyncIterator[Any]:
+    """在独立测试库中写入幂等种子数据后交给测试使用。"""
+    from app.db.seed import seed
+
+    await seed(db_session)
+    await db_session.commit()
+    yield db_session
+
+
+@pytest.fixture
+def auth() -> Any:
+    """构造 Bearer 认证请求头的小工具。"""
+
+    def _auth(token: str) -> dict[str, str]:
+        return {"Authorization": f"Bearer {token}"}
+
+    return _auth

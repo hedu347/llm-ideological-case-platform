@@ -125,6 +125,7 @@ def upgrade() -> None:
     sa.Column('offline_reason', sa.Text(), nullable=False),
     sa.Column('reviewer_id', sa.Integer(), nullable=True),
     sa.Column('review_time', sa.String(length=19), nullable=False),
+    sa.Column('create_time', sa.String(length=19), nullable=False),
     sa.ForeignKeyConstraint(['author_id'], ['users.id'], name=op.f('fk_cases_author_id_users')),
     sa.ForeignKeyConstraint(['reviewer_id'], ['users.id'], name=op.f('fk_cases_reviewer_id_users')),
     sa.PrimaryKeyConstraint('id', name=op.f('pk_cases'))
