@@ -12,7 +12,7 @@ export const useAppStore = defineStore('app', {
       page: 1,
       size: 9,
     },
-    // AI 生成预填（详情弹窗「生成同类案例」、记录「编辑重生成」写入，AIGenerate 挂载读取后清空）
+    // AI 生成预填（生成记录「编辑重生成」写入，AIGenerate 挂载读取后清空）
     aiPrefill: null,
   }),
   actions: {

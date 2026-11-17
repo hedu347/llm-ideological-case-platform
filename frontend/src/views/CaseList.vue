@@ -47,19 +47,47 @@
     <div class="content">
       <div class="content-header">
         <div class="result-count">共 <b>{{ total }}</b> 条案例</div>
-        <el-radio-group v-model="form.sort" @change="doSearch">
-          <el-radio-button value="new">最新发布</el-radio-button>
-          <el-radio-button value="views">浏览最多</el-radio-button>
-        </el-radio-group>
+        <span class="sort-label">按最新发布排序</span>
       </div>
-      <div v-loading="loading" class="case-grid">
-        <el-row :gutter="16">
-          <el-col v-for="c in list" :key="c.id" :xs="24" :sm="12" :md="8" class="col">
-            <CaseCard :item="c" @detail="openDetail" @favorite="toggleFav" />
-          </el-col>
-        </el-row>
-        <el-empty v-if="!loading && !list.length" description="没有符合条件的案例" />
-      </div>
+      <el-table
+        v-loading="loading"
+        :data="list"
+        stripe
+        empty-text="没有符合条件的案例"
+        class="case-table"
+      >
+        <el-table-column label="标题" prop="title" min-width="220" show-overflow-tooltip />
+        <el-table-column label="案例分类" prop="category" width="110" align="center" />
+        <el-table-column label="来源方式" prop="sourceType" width="110" align="center" />
+        <el-table-column label="思政标签" min-width="180">
+          <template #default="{ row }">
+            <span class="tag-wrap">
+              <el-tag
+                v-for="t in row.ideological_elements || []"
+                :key="t"
+                size="small"
+                type="success"
+                effect="plain"
+              >{{ t }}</el-tag>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="发布时间" width="110" align="center">
+          <template #default="{ row }">{{ formatDate(row.publish_date) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button size="small" @click="openDetail(row)">详情</el-button>
+            <el-button
+              size="small"
+              :type="row.isFavorite ? 'warning' : 'default'"
+              @click="toggleFav(row)"
+            >
+              {{ row.isFavorite ? '已收藏' : '收藏' }}
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
       <div class="pagination">
         <el-pagination
           background
@@ -67,32 +95,25 @@
           :total="total"
           :page-size="form.size"
           :current-page="form.page"
-          :page-sizes="[9, 18, 30]"
+          :page-sizes="[10, 20, 50]"
           @current-change="onPageChange"
           @size-change="onSizeChange"
         />
       </div>
     </div>
 
-    <CaseDetailDialog
-      v-model="detailVisible"
-      :case-id="detailId"
-      @generate-similar="goGenerate"
-    />
+    <CaseDetailDialog v-model="detailVisible" :case-id="detailId" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { Search } from '@element-plus/icons-vue'
 import { getCaseListApi, getTagListApi, addFavoriteApi, removeFavoriteApi } from '@/api'
 import { PROFESSIONS } from '@/api/mockData'
 import { useAppStore } from '@/stores/app'
-import CaseCard from '@/components/CaseCard.vue'
 import CaseDetailDialog from '@/components/CaseDetailDialog.vue'
 
-const router = useRouter()
 const appStore = useAppStore()
 
 const tags = ref([])
@@ -106,7 +127,7 @@ const form = reactive({
   tag: null,
   sort: 'new',
   page: 1,
-  size: 9,
+  size: 10,
 })
 
 const detailVisible = ref(false)
@@ -146,7 +167,7 @@ function reset() {
     tag: null,
     sort: 'new',
     page: 1,
-    size: 9,
+    size: 10,
   })
   appStore.resetFilter()
   fetchList()
@@ -160,6 +181,12 @@ function onSizeChange(s) {
   form.size = s
   form.page = 1
   fetchList()
+}
+
+// 后端按 YYYYMMDD 传递日期，展示时转成 YYYY-MM-DD
+function formatDate(d) {
+  const s = String(d || '')
+  return s.length === 8 ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : s
 }
 
 function openDetail(c) {
@@ -177,15 +204,6 @@ async function toggleFav(c) {
   }
 }
 
-function goGenerate(c) {
-  appStore.setAiPrefill({
-    ideological: (c.ideological_elements && c.ideological_elements[0]) || '',
-    knowledge: '',
-    profession: c.profession || [],
-  })
-  router.push('/ai-generate')
-}
-
 onMounted(async () => {
   // 从首页指标卡片跳转时回填筛选条件
   const pre = appStore.filter
@@ -195,7 +213,7 @@ onMounted(async () => {
     tag: pre.tag || null,
     sort: pre.sort || 'new',
     page: 1,
-    size: pre.size || 9,
+    size: pre.size || 10,
   })
   const t = await getTagListApi()
   tags.value = t.data || []
@@ -262,11 +280,17 @@ onMounted(async () => {
   font-size: 14px;
   color: #606266;
 }
-.case-grid {
+.sort-label {
+  font-size: 14px;
+  color: #909399;
+}
+.case-table {
   min-height: 200px;
 }
-.col {
-  margin-bottom: 16px;
+.tag-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .pagination {
   display: flex;

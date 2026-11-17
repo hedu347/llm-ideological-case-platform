@@ -95,9 +95,6 @@
           >
             {{ detail.isFavorite ? '取消收藏' : '收藏' }}
           </el-button>
-          <el-button type="primary" plain @click="$emit('generate-similar', detail)">
-            <el-icon class="mr-4"><MagicStick /></el-icon>生成同类案例
-          </el-button>
           <el-button type="primary" plain :icon="ChatDotRound" @click="showChat = !showChat">
             {{ showChat ? '关闭问答' : 'AI 问答' }}
           </el-button>
@@ -122,7 +119,7 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   caseId: { type: [Number, String], default: null },
 })
-const emit = defineEmits(['update:modelValue', 'generate-similar'])
+const emit = defineEmits(['update:modelValue'])
 
 const loading = ref(false)
 const detail = ref(null)
