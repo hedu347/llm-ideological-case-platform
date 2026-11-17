@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import get_settings
 from app.db.base import Base
+from app.models import entities  # noqa: F401  导入业务模型以注册 metadata
 
 config = context.config
 
