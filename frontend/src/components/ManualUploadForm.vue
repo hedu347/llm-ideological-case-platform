@@ -86,7 +86,7 @@ import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Upload } from '@element-plus/icons-vue'
 import { submitCaseApi, saveDraftApi, parseCaseApi } from '@/api'
-import { CASE_CATEGORIES, PROFESSIONS, IDEOLOGICAL_TAGS } from '@/api/mockData'
+import { CASE_CATEGORIES, PROFESSIONS, IDEOLOGICAL_TAGS } from '@/api/constants'
 
 const props = defineProps({
   initial: { type: Object, default: null },

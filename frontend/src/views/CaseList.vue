@@ -110,7 +110,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { getCaseListApi, getTagListApi, addFavoriteApi, removeFavoriteApi } from '@/api'
-import { PROFESSIONS } from '@/api/mockData'
+import { PROFESSIONS } from '@/api/constants'
 import { useAppStore } from '@/stores/app'
 import CaseDetailDialog from '@/components/CaseDetailDialog.vue'
 

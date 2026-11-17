@@ -13,12 +13,12 @@ export default defineConfig({
   server: {
     // 与原 case-system 区分端口，避免两个 dev server 同时运行时的端口冲突
     port: 5174,
-    // 后端联调时开启代理，Mock 阶段无需
-    // proxy: {
-    //   '/api': {
-    //     target: 'http://localhost:8080',
-    //     changeOrigin: true,
-    //   },
-    // },
+    // 开发期把 /api 代理到本地 FastAPI，前后端同源，无需跨域配置
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
   },
 })

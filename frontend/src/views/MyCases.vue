@@ -97,7 +97,7 @@ import {
   deleteDraftApi,
   getReviewOpinionApi,
 } from '@/api'
-import { REVIEW_STATUSES } from '@/api/mockData'
+import { REVIEW_STATUSES } from '@/api/constants'
 import ManualUploadForm from '@/components/ManualUploadForm.vue'
 
 const list = ref([])

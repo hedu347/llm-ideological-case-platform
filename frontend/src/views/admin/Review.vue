@@ -227,7 +227,7 @@ import {
   importCasesApi,
   exportCasesApi,
 } from '@/api'
-import { CASE_CATEGORIES, PROFESSIONS } from '@/api/mockData'
+import { CASE_CATEGORIES, PROFESSIONS } from '@/api/constants'
 
 const statusTypeMap = {
   草稿: 'info', 待审核: 'warning', 已发布: 'success', 审核驳回: 'danger', 需补充: 'warning', 已下线: 'info',

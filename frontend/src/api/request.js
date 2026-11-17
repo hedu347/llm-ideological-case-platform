@@ -81,6 +81,9 @@ export function post(url, data, config) {
 export function put(url, data, config) {
   return service.put(url, data, config)
 }
+export function patch(url, data, config) {
+  return service.patch(url, data, config)
+}
 export function del(url, config) {
   return service.delete(url, config)
 }

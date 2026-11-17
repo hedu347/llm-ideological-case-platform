@@ -184,7 +184,7 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { ChatDotRound, Loading } from '@element-plus/icons-vue'
 import { generateCaseStreamApi, submitCaseApi, saveDraftApi } from '@/api'
-import { CASE_CATEGORIES, PROFESSIONS, IDEOLOGICAL_TAGS } from '@/api/mockData'
+import { CASE_CATEGORIES, PROFESSIONS, IDEOLOGICAL_TAGS } from '@/api/constants'
 import { useAppStore } from '@/stores/app'
 import { ElMessage } from 'element-plus'
 import ManualUploadForm from '@/components/ManualUploadForm.vue'
